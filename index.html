@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="BDR: Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering">
+  <meta name="description" content="Bayesian Data Reweighting (BDR) models the importance of every query–document negative as a latent variable and infers closed-form posterior weights that down-weight likely false negatives when training multimodal retrievers for knowledge-based VQA.">
+  <meta name="keywords" content="multimodal retrieval, knowledge-based VQA, contrastive learning, false negatives, InfoNCE, Bayesian inference, data reweighting, stochastic EM, BDR">
+  <meta name="author" content="Jingchen Sun, Shaobo Han, Ruiyi Zhang, Naresh Kumar Devulapally, Ming Liu, Yitao Long, Vishnu Suresh Lokhande, Changyou Chen">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="BDR">
+  <meta property="og:title" content="Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering">
+  <meta property="og:description" content="BDR infers closed-form posterior weights for contrastive negatives, down-weighting likely false negatives in knowledge-based VQA retrieval.">
+  <meta property="og:url" content="https://jingchensun.github.io/bdr/">
+  <meta property="og:image" content="https://jingchensun.github.io/bdr/static/images/teaser.png">
+  <meta property="og:image:alt" content="Examples of false-negative passages in knowledge-based VQA and the weights BDR assigns to them">
+  <meta property="article:published_time" content="2026-08-03T00:00:00.000Z">
+  <meta property="article:author" content="Jingchen Sun">
+  <meta property="article:section" content="Research">
+  <meta property="article:tag" content="Multimodal Retrieval">
+  <meta property="article:tag" content="Knowledge-Based VQA">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based VQA">
+  <meta name="twitter:description" content="BDR infers closed-form posterior weights for contrastive negatives, down-weighting likely false negatives in knowledge-based VQA retrieval.">
+  <meta name="twitter:image" content="https://jingchensun.github.io/bdr/static/images/teaser.png">
+  <meta name="twitter:image:alt" content="Examples of false-negative passages in knowledge-based VQA and the weights BDR assigns to them">
+
+  <!-- Academic/Research Specific -->
+  <meta name="citation_title" content="Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering">
+  <meta name="citation_author" content="Sun, Jingchen">
+  <meta name="citation_author" content="Han, Shaobo">
+  <meta name="citation_author" content="Zhang, Ruiyi">
+  <meta name="citation_author" content="Devulapally, Naresh Kumar">
+  <meta name="citation_author" content="Liu, Ming">
+  <meta name="citation_author" content="Long, Yitao">
+  <meta name="citation_author" content="Lokhande, Vishnu Suresh">
+  <meta name="citation_author" content="Chen, Changyou">
+  <meta name="citation_publication_date" content="2026">
+  <meta name="citation_arxiv_id" content="2608.02907">
+  <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2608.02907">
+
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ajax.googleapis.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+  <title>BDR: Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based VQA</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e293b'/><text x='50' y='70' font-size='62' text-anchor='middle' fill='white' font-family='Georgia,serif' font-style='italic'>w</text></svg>">
+
+  <!-- Critical CSS - Load synchronously -->
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <!-- Non-critical CSS - Load asynchronously -->
+  <link rel="preload" href="static/css/bulma-carousel.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/bulma-slider.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/fontawesome.all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <!-- Fallback for browsers that don't support preload -->
+  <noscript>
+    <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  </noscript>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- KaTeX for math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3BBFQUbk/zgIYC2R0QpeeYb+TwlBVMrlgLqwRjRtGZiK7ww" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" integrity="sha384-hIoBPJpTUs74ddyc4bFZSM1TVlQDA60VBbJS0oA934VSz82sBx1X7kSx2ATBDIyd" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}], throwOnError: false});"></script>
+
+  <!-- Defer non-critical JavaScript -->
+  <script defer src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script defer src="static/js/bulma-carousel.min.js"></script>
+  <script defer src="static/js/bulma-slider.min.js"></script>
+  <script defer src="static/js/index.js"></script>
+
+  <!-- Structured Data for Academic Papers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering",
+    "description": "Bayesian Data Reweighting (BDR) models query–document importance as latent variables and infers closed-form posterior weights to down-weight likely false negatives when training multimodal retrievers for knowledge-based VQA.",
+    "author": [
+      {"@type": "Person", "name": "Jingchen Sun", "affiliation": {"@type": "Organization", "name": "University at Buffalo"}},
+      {"@type": "Person", "name": "Shaobo Han", "affiliation": {"@type": "Organization", "name": "NEC Laboratories America"}},
+      {"@type": "Person", "name": "Ruiyi Zhang", "affiliation": {"@type": "Organization", "name": "Adobe Research"}},
+      {"@type": "Person", "name": "Naresh Kumar Devulapally", "affiliation": {"@type": "Organization", "name": "University at Buffalo"}},
+      {"@type": "Person", "name": "Ming Liu", "affiliation": {"@type": "Organization", "name": "Iowa State University"}},
+      {"@type": "Person", "name": "Yitao Long", "affiliation": {"@type": "Organization", "name": "New York University"}},
+      {"@type": "Person", "name": "Vishnu Suresh Lokhande", "affiliation": {"@type": "Organization", "name": "University at Buffalo"}},
+      {"@type": "Person", "name": "Changyou Chen", "affiliation": {"@type": "Organization", "name": "University at Buffalo"}}
+    ],
+    "datePublished": "2026-08-03",
+    "url": "https://jingchensun.github.io/bdr/",
+    "image": "https://jingchensun.github.io/bdr/static/images/teaser.png",
+    "keywords": ["multimodal retrieval", "knowledge-based VQA", "contrastive learning", "false negatives", "Bayesian inference"],
+    "sameAs": ["https://arxiv.org/abs/2608.02907"],
+    "isAccessibleForFree": true
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Scroll to Top Button -->
+  <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <main id="main-content">
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-2 publication-title">
+              <span class="method-name">Bayesian Data Reweighting</span> Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering
+            </h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><a href="https://jingchensun.github.io/" target="_blank">Jingchen Sun</a><sup>1</sup>,</span>
+              <span class="author-block"><a href="https://shaobohan.net/" target="_blank">Shaobo Han</a><sup>2</sup>,</span>
+              <span class="author-block">Ruiyi Zhang<sup>3</sup>,</span>
+              <span class="author-block">Naresh Kumar Devulapally<sup>1</sup>,</span>
+              <span class="author-block">Ming Liu<sup>4</sup>,</span>
+              <span class="author-block">Yitao Long<sup>5</sup>,</span>
+              <span class="author-block">Vishnu Suresh Lokhande<sup>1</sup>,</span>
+              <span class="author-block"><a href="https://cse.buffalo.edu/~changyou/index.html" target="_blank">Changyou Chen</a><sup>1</sup></span>
+            </div>
+
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><sup>1</sup>University at Buffalo</span>
+              <span class="author-block"><sup>2</sup>NEC Laboratories America</span>
+              <span class="author-block"><sup>3</sup>Adobe Research</span>
+              <span class="author-block"><sup>4</sup>Iowa State University</span>
+              <span class="author-block"><sup>5</sup>New York University</span>
+            </div>
+
+            <div class="publication-venue">arXiv 2026</div>
+
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <span class="link-block">
+                  <a href="static/pdfs/BDR_arXiv2026.pdf" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                    </span>
+                    <span>Paper</span>
+                  </a>
+                </span>
+
+                <span class="link-block">
+                  <a href="https://arxiv.org/abs/2608.02907" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                    </span>
+                    <span>arXiv</span>
+                  </a>
+                </span>
+
+                <span class="link-block">
+                  <span class="external-link button is-normal is-rounded is-dark is-coming-soon" title="Coming soon">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code (Coming Soon)</span>
+                  </span>
+                </span>
+
+                <span class="link-block">
+                  <a href="#BibTeX"
+                  class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fas fa-quote-left"></i>
+                    </span>
+                    <span>BibTeX</span>
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Teaser image -->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <figure class="paper-figure teaser-figure">
+          <img src="static/images/teaser.png" alt="Two EVQA queries, each with an annotated true-positive passage and an unannotated false-negative passage about the same entity; BDR lowers the false negatives' weights from 1.0 to 0.4 and 0.8.">
+        </figure>
+        <h2 class="subtitle has-text-centered figure-caption">
+          <strong>False negatives in knowledge-based VQA.</strong>
+          An unannotated passage (FN) often describes the same entity as the annotated one (TP) and is still partly useful.
+          Standard InfoNCE treats it as a negative and pushes it away from the query.
+          BDR infers a lower weight for it (\(w\!: 1.0 \to 0.4\) and \(1.0 \to 0.8\)), which suppresses the noisy contrastive signal.
+        </h2>
+      </div>
+    </div>
+  </section>
+  <!-- End teaser image -->
+
+
+  <!-- Paper abstract -->
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              Multimodal retrievers are essential for knowledge-based visual question answering, where they retrieve external
+              evidence for image&ndash;question pairs. However, existing contrastive training methods typically treat all unmatched
+              query&ndash;document pairs as equally informative negatives, which is problematic because many unmatched documents
+              may still be semantically relevant or partially useful. We propose <strong>B</strong>ayesian <strong>D</strong>ata
+              <strong>R</strong>eweighting (<strong>BDR</strong>), a probabilistic framework that models query&ndash;document importance
+              as latent variables and adaptively infers posterior weights to downweight likely false negatives. With closed-form
+              posterior updates under conjugate priors and stochastic EM optimization, our method consistently improves retrieval
+              accuracy across three retrievers and seven knowledge-based VQA benchmarks.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End paper abstract -->
+
+
+  <!-- Highlights -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column">
+          <h2 class="title is-3">Highlights</h2>
+          <div class="columns highlight-grid">
+            <div class="column is-one-third">
+              <div class="highlight-card">
+                <span class="highlight-icon"><i class="fas fa-search"></i></span>
+                <h3>False negatives in KB-VQA</h3>
+                <p>Knowledge documents are weakly annotated and overlap heavily. Many "negatives" in a batch are relevant passages that InfoNCE wrongly pushes away.</p>
+              </div>
+            </div>
+            <div class="column is-one-third">
+              <div class="highlight-card">
+                <span class="highlight-icon"><i class="fas fa-project-diagram"></i></span>
+                <h3>Closed-form Bayesian weights</h3>
+                <p>Each negative gets a latent weight. Laplace augmentation and conjugate priors give closed-form posteriors, trained with stochastic EM.</p>
+              </div>
+            </div>
+            <div class="column is-one-third">
+              <div class="highlight-card">
+                <span class="highlight-icon"><i class="fas fa-chart-line"></i></span>
+                <h3>Consistent gains, no extra cost</h3>
+                <p><strong>+12.1</strong> average recall on seven M2KR benchmarks, gains on three backbones and in downstream VQA, with at most <strong>2%</strong> extra training time.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End highlights -->
+
+
+  <!-- Method -->
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Method</h2>
+      <figure class="paper-figure method-figure">
+        <img src="static/images/method.png" alt="BDR training step: queries and passages are encoded by an MLLM retriever into an in-batch similarity matrix; the E-step samples an auxiliary variable per query and a weight per negative in closed form; the weighted InfoNCE loss drives the M-step update of the retriever." loading="lazy">
+      </figure>
+      <p class="figure-caption">
+        <strong>One BDR training step.</strong> The retriever scores every query&ndash;passage pair in the batch.
+        The E-step samples an auxiliary variable \(u_i\) per query and a weight \(w_{ik}\) per negative from their closed-form posteriors,
+        so negatives that look suspiciously similar to the query (likely false negatives) get small weights.
+        The M-step updates the retriever with the weighted InfoNCE loss. Weight values in the figure are illustrative.
+      </p>
+
+      <div class="columns is-centered">
+        <div class="column is-four-fifths">
+          <div class="content has-text-justified method-text">
+            <p>
+              <strong>Weighted contrastive objective.</strong>
+              Let \(s_{ik} = \exp(\mathrm{sim}(q_i, z_k)/\tau)\) be the exponentiated cosine similarity between query \(q_i\) and document \(z_k\).
+              Standard InfoNCE gives every in-batch negative the same weight. BDR instead attaches a weight \(w_{ik} \ge 0\) to each negative pair:
+            </p>
+            $$\mathcal{L}_{\mathrm{BDR}}(\mathcal{B};\theta) = -\frac{1}{B}\sum_{i=1}^{B}\log\frac{s_i^{+}}{s_i^{+}+\sum_{k=1}^{K} w_{ik}\, s_{ik}^{-}}.$$
+            <p>
+              Setting \(w_{ik}=1\) recovers InfoNCE. We treat the weights as latent random variables, read the objective as a per-query
+              pseudo-likelihood \(p_i(\mathbf{w}_i,\theta)\), and infer them jointly with the retriever. No clean validation set
+              and no gradient-based importance estimate is needed:
+            </p>
+            $$p(\mathbf{w},\theta \mid \mathcal{X}) \;\propto\; \prod_{i=1}^{|\mathcal{X}|} p_i(\mathbf{w}_i,\theta)\,\prod_{i,k} p(w_{ik})\,p(\theta).$$
+            <p>
+              <strong>Laplace augmentation.</strong>
+              All weights of a query share the normalizer \(\lambda_i = s_i^{+}+\sum_k w_{ik}s_{ik}^{-}\), so their conditionals have no closed form.
+              Using \(\lambda_i^{-1} = \int_0^\infty e^{-\lambda_i u_i}\,du_i\), one auxiliary variable \(u_i\) per query factorizes the likelihood:
+            </p>
+            $$\tilde p_i(u_i,\mathbf{w}_i,\theta) \;\propto\; s_i^{+}\,e^{-u_i s_i^{+}} \prod_{k=1}^{K} e^{-u_i w_{ik} s_{ik}^{-}}.$$
+            <p>
+              <strong>Closed-form posteriors.</strong>
+              Given \(u_i\), the weights are conditionally independent, and conjugate priors give closed-form conditionals.
+              A Gamma prior on \(u_i\) yields \(u_i \mid - \sim \mathrm{Gamma}\big(a_u,\, b_u + s_i^{+} + \sum_k w_{ik}s_{ik}^{-}\big)\).
+              For the weights, a <em>Gamma prior</em> gives soft reweighting and a <em>Bernoulli prior</em> gives hard keep-or-drop gating:
+            </p>
+            $$\text{Gamma prior:}\quad w_{ik}\mid - \sim \mathrm{Gamma}\big(a_w,\, b_w + u_i\, s_{ik}^{-}\big), \qquad
+              \mathbb{E}[w_{ik}\mid -] = \frac{a_w}{b_w + u_i\, s_{ik}^{-}},$$
+            $$\text{Bernoulli prior:}\quad \mathbb{E}[w_{ik}\mid -] = P(w_{ik}=1\mid -) = \frac{p_w\, e^{-u_i s_{ik}^{-}}}{1-p_w+p_w\, e^{-u_i s_{ik}^{-}}}.$$
+            <p>
+              In both cases, a negative that is highly similar to the query gets a smaller expected weight.
+            </p>
+            <p>
+              <strong>Stochastic EM.</strong>
+              Each iteration samples a mini-batch, computes similarities with the current retriever, draws \(u_i\) and then \(w_{ik}\) from their posteriors (E-step),
+              and takes a gradient step on \(\mathcal{L}_{\mathrm{BDR}}\) with the sampled weights (M-step). The sampling is element-wise,
+              so its cost is negligible next to the encoder's forward and backward passes.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End method -->
+
+
+  <!-- Main results -->
+  <section class="section">
+    <div class="container is-max-widescreen">
+      <h2 class="title is-3 has-text-centered">Experimental Results</h2>
+      <p class="section-intro">
+        Retrievers are multimodal LLM embedding models (last-token embedding, LoRA fine-tuning).
+        We report Recall@K (R@K: is the target document in the top K?) and Pseudo Recall@K (PR@K: does any top-K document contain the answer?).
+      </p>
+
+      <h3 class="title is-5 table-title">Comparison with reweighting baselines (Qwen2-VL-2B, 10K training samples per dataset)</h3>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th class="has-text-left" rowspan="2">Method</th>
+              <th colspan="4">OKVQA</th><th colspan="4">EVQA</th>
+            </tr>
+            <tr>
+              <th>R@1</th><th>R@5</th><th>PR@1</th><th>PR@5</th><th>R@1</th><th>R@5</th><th>PR@1</th><th>PR@5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-base"><td class="has-text-left">Uniform Negative Sampling (InfoNCE)</td><td>23.0</td><td>45.8</td><td>39.8</td><td>61.7</td><td>28.0</td><td>57.0</td><td>35.5</td><td>63.6</td></tr>
+            <tr><td class="has-text-left">Random Negative Reweighting</td><td>22.8</td><td>46.8</td><td>37.4</td><td>59.5</td><td>27.2</td><td>55.2</td><td>34.1</td><td>62.4</td></tr>
+            <tr><td class="has-text-left">Similarity-based Reweighting</td><td>24.6</td><td>47.6</td><td>39.0</td><td>60.1</td><td>27.6</td><td>58.1</td><td>34.6</td><td>64.8</td></tr>
+            <tr><td class="has-text-left">Margin-based Reweighting Loss</td><td>25.4</td><td>49.3</td><td>40.7</td><td>61.4</td><td>28.8</td><td>59.8</td><td>35.5</td><td>65.7</td></tr>
+            <tr><td class="has-text-left">Decoupled Positive Reweighting</td><td>25.6</td><td>49.1</td><td>40.5</td><td>60.9</td><td>29.9</td><td>60.3</td><td>36.9</td><td>67.0</td></tr>
+            <tr><td class="has-text-left">Debiased Negative Reweighting</td><td>25.9</td><td>50.5</td><td>42.0</td><td>62.6</td><td>30.6</td><td>60.9</td><td>37.4</td><td>67.4</td></tr>
+            <tr class="group-end"><td class="has-text-left">Hardness Negative Reweighting</td><td>26.5</td><td>49.8</td><td>42.6</td><td>62.8</td><td>31.7</td><td>61.1</td><td>37.6</td><td>66.9</td></tr>
+            <tr class="row-ours"><td class="has-text-left">BDR (Bernoulli prior)</td><td>28.9<span class="std">&plusmn;0.7</span></td><td>53.8<span class="std">&plusmn;0.7</span></td><td>44.4<span class="std">&plusmn;1.0</span></td><td>63.5<span class="std">&plusmn;0.4</span></td><td>33.5<span class="std">&plusmn;1.3</span></td><td>63.9<span class="std">&plusmn;1.3</span></td><td>40.6<span class="std">&plusmn;1.3</span></td><td>69.7<span class="std">&plusmn;1.0</span></td></tr>
+            <tr class="row-ours"><td class="has-text-left">BDR (Gamma prior)</td><td><b>30.1</b><span class="std">&plusmn;0.4</span></td><td><b>54.8</b><span class="std">&plusmn;0.8</span></td><td><b>45.9</b><span class="std">&plusmn;0.9</span></td><td><b>66.0</b><span class="std">&plusmn;0.6</span></td><td><b>35.1</b><span class="std">&plusmn;0.9</span></td><td><b>65.6</b><span class="std">&plusmn;1.6</span></td><td><b>42.2</b><span class="std">&plusmn;0.9</span></td><td><b>71.5</b><span class="std">&plusmn;1.4</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-caption">
+        BDR is best on every metric. With the Gamma prior, R@1 improves by 7.1 points over InfoNCE on both datasets and by 3.6 / 3.4 points over the
+        strongest baseline (hardness reweighting). Soft Gamma weights beat hard Bernoulli gating.
+      </p>
+
+      <h3 class="title is-5 table-title">Seven M2KR benchmarks (Qwen2-VL-2B, 1K training samples per task, trained jointly)</h3>
+      <div class="table-wrap">
+        <table class="results-table compact">
+          <thead>
+            <tr>
+              <th class="has-text-left" rowspan="2">Method</th>
+              <th colspan="2">EVQA</th><th colspan="2">OKVQA</th><th colspan="2">KVQA</th><th colspan="2">InfoSeek</th>
+              <th colspan="2">WIT</th><th colspan="2">OVEN</th><th colspan="2">LLaVA</th><th rowspan="2">Avg.</th>
+            </tr>
+            <tr>
+              <th>R@1</th><th>R@5</th><th>R@1</th><th>R@5</th><th>R@1</th><th>R@5</th><th>R@1</th><th>R@5</th>
+              <th>R@1</th><th>R@5</th><th>R@1</th><th>R@5</th><th>R@1</th><th>R@5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-base"><td class="has-text-left">Uniform Negative Sampling (InfoNCE)</td><td>27.7</td><td>55.8</td><td>24.9</td><td>47.0</td><td>26.1</td><td>52.0</td><td>21.1</td><td>43.3</td><td>23.0</td><td>43.3</td><td>26.2</td><td>52.6</td><td><b>77.2</b></td><td>92.7</td><td>43.8</td></tr>
+            <tr><td class="has-text-left">Debiased Negative Reweighting</td><td>26.9</td><td>56.7</td><td>23.1</td><td>45.4</td><td>27.1</td><td>53.6</td><td>27.8</td><td>47.7</td><td>35.6</td><td>58.5</td><td>38.7</td><td>64.2</td><td>65.3</td><td>87.2</td><td>47.0</td></tr>
+            <tr class="group-end"><td class="has-text-left">Hardness Negative Reweighting</td><td>30.2</td><td>59.2</td><td>19.6</td><td>39.1</td><td>25.7</td><td>51.9</td><td>36.4</td><td>59.6</td><td>33.9</td><td>56.5</td><td>42.0</td><td>66.8</td><td>58.6</td><td>84.6</td><td>47.4</td></tr>
+            <tr class="row-ours"><td class="has-text-left">BDR (Bernoulli prior)</td><td>34.0</td><td>65.1</td><td>23.5</td><td>44.0</td><td>31.9</td><td>59.1</td><td><b>40.2</b></td><td><b>66.1</b></td><td>41.7</td><td>65.1</td><td>47.4</td><td>71.5</td><td>76.0</td><td><b>93.5</b></td><td>54.2 <span class="gain">+10.4</span></td></tr>
+            <tr class="row-ours"><td class="has-text-left">BDR (Gamma prior)</td><td><b>37.8</b></td><td><b>68.8</b></td><td><b>26.0</b></td><td><b>50.0</b></td><td><b>35.9</b></td><td><b>61.6</b></td><td>39.3</td><td>62.8</td><td><b>42.9</b></td><td><b>67.0</b></td><td><b>48.3</b></td><td><b>72.7</b></td><td>76.6</td><td>93.1</td><td><b>55.9</b> <span class="gain">+12.1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-caption">
+        The Gamma-prior variant has the best average recall and the Bernoulli-prior variant is best on InfoSeek.
+        Heuristic reweighting helps unevenly; for example, hardness reweighting loses 5.3 R@1 on OKVQA and 18.6 on LLaVA relative to InfoNCE.
+        Gains in the Avg. column are measured against InfoNCE.
+      </p>
+
+      <h3 class="title is-5 table-title">Different retriever backbones on full M2KR</h3>
+      <div class="table-wrap">
+        <table class="results-table compact">
+          <thead>
+            <tr>
+              <th class="has-text-left" rowspan="2">Retriever</th>
+              <th colspan="2">EVQA</th><th colspan="2">OKVQA</th><th colspan="2">InfoSeek</th>
+              <th>OVEN</th><th>LLaVA</th><th>KVQA</th><th rowspan="2">Avg.</th>
+            </tr>
+            <tr>
+              <th>R@5</th><th>PR@5</th><th>R@5</th><th>PR@5</th><th>R@5</th><th>PR@5</th><th>R@5</th><th>R@1</th><th>R@5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="has-text-left">UniIR (Feature Fusion)</td><td>17.0</td><td>35.5</td><td>9.3</td><td>58.1</td><td>24.5</td><td>46.0</td><td>63.6</td><td>47.8</td><td>13.5</td><td>35.0</td></tr>
+            <tr><td class="has-text-left">CLIP (Unimodal)</td><td>17.2</td><td>29.8</td><td>4.3</td><td>37.9</td><td>25.7</td><td>44.2</td><td>69.1</td><td>44.8</td><td>56.1</td><td>36.6</td></tr>
+            <tr><td class="has-text-left">CLIP (Feature Fusion)</td><td>61.9</td><td>71.9</td><td>27.9</td><td>67.5</td><td>37.3</td><td>56.3</td><td>63.0</td><td>72.0</td><td>41.1</td><td>55.4</td></tr>
+            <tr><td class="has-text-left">PreFLMR</td><td>62.0</td><td>72.0</td><td>30.2</td><td>67.4</td><td>39.2</td><td>57.7</td><td>64.3</td><td>72.6</td><td>41.9</td><td>56.4</td></tr>
+            <tr class="group-end"><td class="has-text-left">ReT</td><td>48.6</td><td>60.2</td><td>19.0</td><td>63.8</td><td>52.0</td><td><b>62.5</b></td><td><b>84.0</b></td><td>79.2</td><td>60.6</td><td>58.9</td></tr>
+            <tr class="row-base"><td class="has-text-left">Qwen2-VL-2B</td><td>50.4</td><td>63.9</td><td>24.8</td><td>58.7</td><td>58.5</td><td>53.7</td><td>75.6</td><td>84.2</td><td>51.0</td><td>57.9</td></tr>
+            <tr class="row-ours group-end"><td class="has-text-left">Qwen2-VL-2B w/ BDR</td><td>51.2 <span class="gain">+0.8</span></td><td>64.2 <span class="gain">+0.3</span></td><td>26.6 <span class="gain">+1.8</span></td><td>59.7 <span class="gain">+1.0</span></td><td>60.5 <span class="gain">+2.0</span></td><td>56.7 <span class="gain">+3.0</span></td><td>78.3 <span class="gain">+2.7</span></td><td>88.7 <span class="gain">+4.5</span></td><td>55.6 <span class="gain">+4.6</span></td><td>60.2 <span class="gain">+2.3</span></td></tr>
+            <tr class="row-base"><td class="has-text-left">Phi-3.5-V-3.8B</td><td>45.1</td><td>60.3</td><td>35.1</td><td>65.3</td><td>40.8</td><td>44.3</td><td>71.5</td><td>91.4</td><td>52.6</td><td>56.3</td></tr>
+            <tr class="row-ours group-end"><td class="has-text-left">Phi-3.5-V-3.8B w/ BDR</td><td>49.2 <span class="gain">+4.1</span></td><td>62.2 <span class="gain">+1.9</span></td><td>42.3 <span class="gain">+7.2</span></td><td>69.1 <span class="gain">+3.8</span></td><td>43.8 <span class="gain">+3.0</span></td><td>47.5 <span class="gain">+3.2</span></td><td>74.7 <span class="gain">+3.2</span></td><td><b>91.6</b> <span class="gain">+0.2</span></td><td>57.7 <span class="gain">+5.1</span></td><td>59.8 <span class="gain">+3.5</span></td></tr>
+            <tr class="row-base"><td class="has-text-left">Qwen2-VL-7B</td><td>62.0</td><td>70.8</td><td>41.4</td><td>68.7</td><td>64.6</td><td>58.4</td><td>80.9</td><td>90.0</td><td>63.2</td><td>66.6</td></tr>
+            <tr class="row-ours"><td class="has-text-left">Qwen2-VL-7B w/ BDR</td><td><b>64.3</b> <span class="gain">+2.3</span></td><td><b>73.1</b> <span class="gain">+2.3</span></td><td><b>43.5</b> <span class="gain">+2.1</span></td><td><b>69.9</b> <span class="gain">+1.2</span></td><td><b>66.7</b> <span class="gain">+2.1</span></td><td>60.5 <span class="gain">+2.1</span></td><td>83.4 <span class="gain">+2.5</span></td><td>91.0 <span class="gain">+1.0</span></td><td><b>65.3</b> <span class="gain">+2.1</span></td><td><b>68.6</b> <span class="gain">+2.0</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-caption">
+        Trained on the full M2KR corpus and evaluated on the full test sets. Following PreFLMR and ReT, OVEN and KVQA report R@5 and LLaVA reports R@1.
+        BDR (Gamma prior) improves every backbone, and Qwen2-VL-7B w/ BDR has the best average, ahead of PreFLMR and ReT.
+      </p>
+
+      <h3 class="title is-5 table-title">Downstream answer generation with frozen generators</h3>
+      <div class="table-wrap">
+        <table class="results-table compact">
+          <thead>
+            <tr>
+              <th class="has-text-left" rowspan="2">Generator (frozen)</th><th class="has-text-left" rowspan="2">Retriever</th>
+              <th colspan="4">InfoSeek</th><th colspan="4">EVQA</th>
+            </tr>
+            <tr>
+              <th>R@5</th><th>VQA Acc.</th><th>EM</th><th>BLEU-1</th><th>R@5</th><th>VQA Acc.</th><th>BLEU-1</th><th>BEM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="has-text-left" rowspan="5">LLaVA-1.6-13B</td><td class="has-text-left">No retrieval</td><td>&ndash;</td><td>5.4</td><td>5.3</td><td>11.9</td><td>&ndash;</td><td>2.7</td><td>8.9</td><td>69.8</td></tr>
+            <tr><td class="has-text-left">PreFLMR</td><td>39.2</td><td>12.9</td><td>12.4</td><td>21.2</td><td>62.0</td><td>8.7</td><td>26.2</td><td>74.3</td></tr>
+            <tr><td class="has-text-left">ReT</td><td>52.0</td><td>17.3</td><td>17.2</td><td>28.9</td><td>48.6</td><td>6.5</td><td>19.2</td><td>73.2</td></tr>
+            <tr class="row-ours"><td class="has-text-left">Qwen2-VL-7B w/ BDR (ours)</td><td><b>66.7</b></td><td><b>20.8</b></td><td><b>20.9</b></td><td><b>34.0</b></td><td><b>64.3</b></td><td><b>9.1</b></td><td><b>26.9</b></td><td><b>77.2</b></td></tr>
+            <tr class="group-end row-oracle"><td class="has-text-left">Oracle retriever</td><td>&ndash;</td><td>37.5</td><td>39.5</td><td>56.4</td><td>&ndash;</td><td>16.1</td><td>46.1</td><td>86.7</td></tr>
+            <tr><td class="has-text-left" rowspan="5">Qwen2.5-VL-7B</td><td class="has-text-left">No retrieval</td><td>&ndash;</td><td>14.4</td><td>14.5</td><td>25.2</td><td>&ndash;</td><td>4.6</td><td>14.3</td><td>65.2</td></tr>
+            <tr><td class="has-text-left">PreFLMR</td><td>39.2</td><td>21.5</td><td>16.1</td><td>24.1</td><td>62.0</td><td>11.5</td><td>34.7</td><td>68.3</td></tr>
+            <tr><td class="has-text-left">ReT</td><td>52.0</td><td>25.9</td><td>21.5</td><td>32.2</td><td>48.6</td><td>10.8</td><td>28.1</td><td>67.9</td></tr>
+            <tr class="row-ours"><td class="has-text-left">Qwen2-VL-7B w/ BDR (ours)</td><td><b>66.7</b></td><td><b>32.1</b></td><td><b>27.5</b></td><td><b>41.3</b></td><td><b>64.3</b></td><td><b>14.4</b></td><td><b>37.1</b></td><td><b>71.2</b></td></tr>
+            <tr class="row-oracle"><td class="has-text-left">Oracle retriever</td><td>&ndash;</td><td>46.2</td><td>41.3</td><td>61.9</td><td>&ndash;</td><td>23.3</td><td>57.8</td><td>89.1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-caption">
+        The oracle retriever returns all ground-truth documents. With either generator, the BDR retriever gives the best VQA accuracy, EM, BLEU-1 and BEM
+        among the non-oracle retrievers (bold), narrowing the gap to the oracle. Better retrieval translates directly into better answers.
+      </p>
+
+      <details class="more-results">
+        <summary>Show prior sensitivity and training cost</summary>
+        <div class="columns">
+          <div class="column">
+            <div class="table-wrap">
+              <table class="results-table compact">
+                <thead>
+                  <tr><th class="has-text-left">Prior (OKVQA R@1)</th><th colspan="5">Value &rarr; R@1</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="has-text-left">\(b_w\) (Gamma)</td><td>0.1 &rarr; 30.0</td><td>0.5 &rarr; 27.9</td><td>1.0 &rarr; 28.6</td><td>2.0 &rarr; 27.6</td><td>5.0 &rarr; 28.7</td></tr>
+                  <tr><td class="has-text-left">\(b_u\) (Gamma)</td><td>0.1 &rarr; 30.1</td><td>0.5 &rarr; 29.9</td><td>1.0 &rarr; 29.1</td><td>5.0 &rarr; 29.9</td><td>20 &rarr; 26.1</td></tr>
+                  <tr><td class="has-text-left">\(p_w\) (Bernoulli)</td><td>0.50 &rarr; 28.7</td><td>0.70 &rarr; 28.7</td><td>0.85 &rarr; 28.8</td><td>0.95 &rarr; 29.0</td><td></td></tr>
+                  <tr><td class="has-text-left">\(N\) (posterior draws)</td><td>1 &rarr; 27.9</td><td>2 &rarr; 29.0</td><td>4 &rarr; 28.8</td><td>8 &rarr; 29.1</td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="table-caption">
+              Gamma shapes fixed to \(a_w = a_u = 1\). BDR is stable across most settings; only a very strong prior (\(b_u = 20\)) hurts.
+              One to eight posterior draws perform about the same.
+            </p>
+          </div>
+          <div class="column">
+            <div class="table-wrap">
+              <table class="results-table compact">
+                <thead>
+                  <tr><th class="has-text-left">Model</th><th>Batch</th><th>Method</th><th>Steps</th><th>GPU (GB)</th><th>Time (h)</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="has-text-left" rowspan="2">Phi-3.5-V</td><td rowspan="2">32</td><td>InfoNCE</td><td>521</td><td>19.9</td><td>3.17</td></tr>
+                  <tr class="row-ours group-end"><td>BDR</td><td>521</td><td>20.0</td><td>3.22</td></tr>
+                  <tr><td class="has-text-left" rowspan="2">Qwen2-VL-7B</td><td rowspan="2">32</td><td>InfoNCE</td><td>521</td><td>32.8</td><td>2.01</td></tr>
+                  <tr class="row-ours group-end"><td>BDR</td><td>521</td><td>32.9</td><td>2.05</td></tr>
+                  <tr><td class="has-text-left" rowspan="2">Phi-3.5-V</td><td rowspan="2">128</td><td>InfoNCE</td><td>131</td><td>19.8</td><td>3.16</td></tr>
+                  <tr class="row-ours group-end"><td>BDR</td><td>131</td><td>20.3</td><td>3.18</td></tr>
+                  <tr><td class="has-text-left" rowspan="2">Qwen2-VL-7B</td><td rowspan="2">128</td><td>InfoNCE</td><td>131</td><td>32.8</td><td>2.00</td></tr>
+                  <tr class="row-ours"><td>BDR</td><td>131</td><td>32.9</td><td>2.02</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="table-caption">
+              BDR adds at most 2% training time and 0.5 GB of GPU memory, because posterior sampling is closed-form and element-wise.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+  <!-- End main results -->
+
+
+  <!-- Analysis -->
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">How Does BDR Work?</h2>
+      <div class="columns is-centered">
+        <div class="column">
+          <figure class="paper-figure">
+            <img src="static/images/similarity.png" alt="Distributions of positive and negative query–passage cosine similarities on EVQA for InfoNCE, debiased, hard-negative and Bayesian reweighting" loading="lazy">
+          </figure>
+          <p class="figure-caption">
+            <strong>More discriminative embeddings.</strong> Cosine similarities of positive and negative query&ndash;passage pairs on EVQA.
+            BDR has the largest gap between the two means, 0.348 versus 0.303 for InfoNCE, and also beats debiased and hard-negative reweighting.
+          </p>
+        </div>
+        <div class="column">
+          <figure class="paper-figure">
+            <img src="static/images/recall_k.png" alt="Recall@K curves on EVQA for K from 1 to 100" loading="lazy">
+          </figure>
+          <p class="figure-caption">
+            <strong>Better ranking at every retrieval budget.</strong> Recall@K on EVQA for K from 1 to 100.
+            Both BDR variants stay above all baselines, and the gap is largest at small K, so relevant documents move to the top of the list.
+          </p>
+        </div>
+      </div>
+      <div class="columns is-centered is-vcentered entropy-row">
+        <div class="column is-7">
+          <figure class="paper-figure">
+            <img src="static/images/calibration.png" alt="Left: weights of true and false negatives; right: fraction of false negatives in each weight decile with a decreasing linear trend" loading="lazy">
+          </figure>
+        </div>
+        <div class="column is-5">
+          <div class="content analysis-text">
+            <p>
+              <strong>Calibrated weights.</strong> We manually identified 54 false negatives among 1,000 sampled EVQA query&ndash;passage pairs.
+              They receive lower weights than true negatives on average (0.966 vs. 1.168), and they concentrate in the low-weight deciles
+              (linear trend slope &minus;0.0123). BDR finds likely false negatives without ever seeing their labels.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End analysis -->
+  </main>
+
+
+  <!--BibTex citation -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <div class="bibtex-header">
+        <h2 class="title">BibTeX</h2>
+        <button class="copy-bibtex-btn" onclick="copyBibTeX()" title="Copy BibTeX to clipboard">
+          <i class="fas fa-copy"></i>
+          <span class="copy-text">Copy</span>
+        </button>
+      </div>
+      <pre id="bibtex-code"><code>@article{sun2026bayesian,
+  title={Bayesian Data Reweighting Improves Multimodal Retrieval for Knowledge-Based Visual Question Answering},
+  author={Sun, Jingchen and Han, Shaobo and Zhang, Ruiyi and Devulapally, Naresh Kumar and Liu, Ming and Long, Yitao and Lokhande, Vishnu Suresh and Chen, Changyou},
+  journal={arXiv preprint arXiv:2608.02907},
+  year={2026}
+}</code></pre>
+    </div>
+  </section>
+  <!--End BibTex citation -->
+
+
+  <footer class="footer">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content">
+            <p>
+              This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+              You are free to borrow the source code of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+              Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
